@@ -1,0 +1,5 @@
+.venv/
+bin/creds.txt
+bin/*.jar
+__pycache__/
+*.log
