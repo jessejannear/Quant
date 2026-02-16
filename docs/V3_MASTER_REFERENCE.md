@@ -1,37 +1,83 @@
-# Theta Data V3: Master Documentation Summary
+# ThetaData v3 API Reference
 
-## 1. Connection Standards
-- **Local Port:** 25503 (V3 Default)
-- **Base REST URL:** `http://127.0.0.1:25503/v3/`
-- **Python Setup:** `client = ThetaClient(port=25503)`
-- **Authentication:** Place `creds.txt` in the terminal directory. 
-  - Line 1: Email
-  - Line 2: Password
+This document outlines the key endpoints and usage for the ThetaData v3 REST API, as used in this project.
 
-## 2. Global V3 Logic Changes
-- **No Pagination:** All data is returned in a single response. Do not use `page` parameters or "next-page" logic.
-- **REST Only:** Real-time streaming is currently handled via V2 (Port 25510). V3 is for Snapshots and History.
-- **Data Formats:** Use `ndjson` for large datasets to pipe directly into Pandas:
-  `df = pd.read_json("URL", lines=True)`
+## Base URL
+All requests are made to the local Theta Terminal instance:
+`http://127.0.0.1:25503`
 
-## 3. Market Data Endpoints (Equities & ETFs)
-- **Quotes:** `/v3/market/quote?symbol=TICKER`
-- **Trade History:** `/v3/market/history?symbol=TICKER&interval=1m&start_date=YYYYMMDD`
-- **OHLC:** Includes Open, High, Low, Close, Volume, and Count.
+## Authentication
+Authentication is handled by the Theta Terminal software. No API keys are required in the HTTP requests themselves.
 
-## 4. Options Data Endpoints
-- **Expirations:** `/v3/market/expirations?symbol=TICKER` (Returns list of YYYYMMDD).
-- **Strikes:** `/v3/market/strikes?symbol=TICKER&expiration=YYYYMMDD`
-- **Option History:** `/v3/market/history?symbol=TICKER&expiration=YYYYMMDD&strike=PRICE&right=C/P&interval=1m`
-- **Greeks Snapshot:** `/v3/market/greeks?symbol=TICKER&expiration=YYYYMMDD` (Returns greeks for the entire chain).
+## Endpoints
 
-## 5. Technical Requirements & Error Handling
-- **Java:** Version 17+ (Ubuntu)
-- **Python:** `thetadata` SDK (latest version)
-- **Error 410 (Gone):** Occurs when a V2 endpoint path is used. Change `/v2/` to `/v3/`.
-- **Error 400 (Bad Request):** Usually an invalid date format (Use YYYYMMDD) or invalid strike.
-- **Error 405:** Method Not Allowed; check if you are using GET vs POST correctly.
+### 1. Stock / Option Roots
+Retrieves the list of available option roots (symbols).
 
-## 6. Performance Tips
-- Use `interval=1d` for long-term historical analysis to reduce payload size.
-- For bulk data (entire option chains), always prefer `ndjson` over standard `json`.
+- **Endpoint**: `/v3/option/list/symbols`
+- **Method**: `GET`
+- **Parameters**:
+    - `format`: Response format (default: `csv`, options: `json`, `ndjson`, `html`).
+- **Example Response** (CSV):
+    ```
+    symbol
+    "AAPL"
+    "MSFT"
+    ...
+    ```
+
+### 2. Expirations
+Retrieves available expiration dates for a specific root.
+
+- **Endpoint**: `/v3/option/list/expirations`
+- **Method**: `GET`
+- **Parameters**:
+    - `symbol`: The root symbol (e.g., `AAPL`).
+- **Returns**: List of dates in `YYYYMMDD` format.
+
+### 3. Strikes
+Retrieves available strike prices for a specific root and expiration.
+
+- **Endpoint**: `/v3/option/list/strikes`
+- **Method**: `GET`
+- **Parameters**:
+    - `symbol`: The root symbol (e.g., `AAPL`).
+    - `expiration`: Expiration date in `YYYYMMDD` format.
+- **Returns**: List of strike prices (e.g., `680.000`).
+
+### 4. Historical Data (OHLC)
+Retrieves historical Open-High-Low-Close data for a specific option contract.
+
+- **Endpoint**: `/v3/option/history/ohlc`
+- **Method**: `GET`
+- **Parameters**:
+    - `symbol`: Root symbol.
+    - `expiration`: Expiration date (`YYYYMMDD`).
+    - `strike`: Strike price in dollars (e.g., `680` for $680).
+    - `right`: `C` (Call) or `P` (Put).
+    - `interval`: Time interval (e.g., `1m`, `5m`, `1h`, `1d`).
+    - `start_date` (optional): `YYYYMMDD`.
+    - `end_date` (optional): `YYYYMMDD`.
+
+### 5. Config / Snapshot
+Retrieves current market data snapshot.
+
+- **Endpoint**: `/v3/option/snapshot/quote`
+- **Method**: `GET`
+- **Parameters**:
+    - `symbol`: Root symbol.
+    - `expiration`: Expiration date.
+    - `strike`: Strike price.
+    - `right`: `C` or `P`.
+
+### 6. Greeks
+Retrieves current Greeks (Delta, Gamma, Theta, etc.).
+
+- **Endpoint**: `/v3/option/snapshot/greeks/all`
+- **Method**: `GET`
+- **Parameters**: Same as Quote.
+
+## Error Handling
+- **404 Not Found**: Endpoint incorrect or data not found.
+- **410 Gone**: Deprecated endpoint (v2 endpoints return this on v3 port).
+- **Connection Refused**: Theta Terminal is not running.

@@ -1,16 +1,31 @@
-# Antigravity Mission Instructions: Theta Data V3
+# Developer Guide
 
-## Workspace Context
-- **Root:** `~/projects/thetadata/`
-- **Scripts:** `./scripts/`
-- **Docs:** `../docs/V3_MASTER_REFERENCE.md`
-- **Terminal:** `../bin/ThetaTerminalv3.jar`
+## Project Structure
+- `src/`: Source code for the Python client.
+- `docs/`: Documentation.
+- `theta_terminal/`: Contains the Theta Terminal JAR and credentials.
 
-## Environment Setup
-- Always use the `.venv` in the `scripts` folder.
-- If Port 25503 is closed, run: `nohup java -jar ../bin/ThetaTerminalv3.jar > ../bin/terminal_log.txt 2>&1 &`
+## Setup Instructions
+1.  **Install Java**: Ensure Java 11+ is installed (`java -version`).
+2.  **Start Theta Terminal**:
+    ```bash
+    cd theta_terminal
+    java -jar ThetaTerminalv3.jar
+    ```
+    This must be running in the background for the API to work.
+3.  **Install Python Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-## Coding Rules
-1. **Reference Docs:** Always read `../docs/V3_MASTER_REFERENCE.md` before writing data-fetching logic.
-2. **Syntax:** Use `ThetaClient(port=25503)`. Never use `Stream` or pagination loops.
-3. **Validation:** Use `curl "http://127.0.0.1:25503/v3/calendar/open_today"` to verify the bridge is active before execution.
+## Common Workflows
+
+### Fetching Option Data
+1.  **Get Roots**: Call `client.get_roots()` to find available symbols.
+2.  **Get Expirations**: Call `client.get_expirations(root)` to find dates.
+3.  **Get Strikes**: Call `client.get_strikes(root, expiration)` to find strikes.
+4.  **Get Data**: Call `client.get_history(...)` for OHLC data.
+
+## Troubleshooting
+- **Connection Failed**: Check if Theta Terminal is running on port 25503.
+- **No Data**: Ensure the market is open or you have the correct subscription level.
